@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cat vs Dog Classifier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #eee;
+    }
+    .container {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      width: 90%;
+      max-width: 700px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #e94560, #0f3460);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 30px;
+      font-size: 0.95rem;
+    }
+    .upload-area {
+      border: 2px dashed rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.3s;
+      margin-bottom: 20px;
+    }
+    .upload-area:hover { border-color: #e94560; }
+    .upload-area input { display: none; }
+    .upload-area label {
+      cursor: pointer;
+      font-size: 1rem;
+      color: #ccc;
+    }
+    #preview {
+      max-width: 200px;
+      max-height: 200px;
+      border-radius: 10px;
+      margin: 15px auto 0;
+      display: none;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(90deg, #e94560, #c62a47);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #results { margin-top: 30px; display: none; }
+    .model-card {
+      background: rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.2s;
+    }
+    .model-card:hover { transform: translateX(4px); }
+    .model-card.best { border-color: #e94560; background: rgba(233,69,96,0.1); }
+    .model-name { font-weight: 600; font-size: 1rem; }
+    .model-pred {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #e94560;
+    }
+    .model-acc { color: #aaa; font-size: 0.85rem; }
+    .best-badge {
+      background: #e94560;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 8px;
+    }
+    .loader {
+      text-align: center;
+      padding: 20px;
+      display: none;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐾 Cat vs Dog Classifier</h1>
+    <p class="subtitle">Upload an image and compare KNN, Decision Tree & Naive Bayes</p>
+
+    <div class="upload-area" onclick="document.getElementById('imgInput').click()">
+      <label>Click to upload an image (JPG/PNG)</label>
+      <input type="file" id="imgInput" accept="image/*" onchange="previewImage(event)" />
+      <img id="preview" alt="Preview" />
+    </div>
+
+    <button id="predictBtn" onclick="predict()" disabled>Classify Image</button>
+
+    <div class="loader" id="loader">Analyzing image with all models...</div>
+
+    <div id="results">
+      <h3 style="margin-bottom:15px; color:#ccc;">Results</h3>
+      <div id="modelCards"></div>
+    </div>
+  </div>
+
+  <script>
+    let selectedFile = null;
+
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('preview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      document.getElementById('predictBtn').disabled = false;
+      document.getElementById('results').style.display = 'none';
+    }
+
+    async function predict() {
+      if (!selectedFile) return;
+
+      document.getElementById('loader').style.display = 'block';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('predictBtn').disabled = true;
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      try {
+        const res = await fetch('/predict', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+
+        const container = document.getElementById('modelCards');
+        container.innerHTML = '';
+
+        for (const [model, info] of Object.entries(data.predictions)) {
+          const isBest = model === data.best_model;
+          const card = document.createElement('div');
+          card.className = 'model-card' + (isBest ? ' best' : '');
+          card.innerHTML = `
+            <div>
+              <span class="model-name">${model}</span>
+              ${isBest ? '<span class="best-badge">Best Model</span>' : ''}
+              <div class="model-acc">Training Accuracy: ${info.accuracy}</div>
+            </div>
+            <div class="model-pred">${info.prediction}</div>
+          `;
+          container.appendChild(card);
+        }
+
+        document.getElementById('results').style.display = 'block';
+      } catch (err) {
+        alert('Error connecting to server. Make sure app.py is running.');
+      } finally {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('predictBtn').disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Cat/
+Dog/
+features.pkl
+models.pkl
+__pycache__/
+*.db
+*.pyc
