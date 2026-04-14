@@ -12,7 +12,7 @@ with open('models.pkl', 'rb') as f:
     pca = data['pca']
     scaler = data['scaler']
 
-IMG_SIZE = 64
+IMG_SIZE = 80
 
 def preprocess_image(file):
     img_array = np.frombuffer(file.read(), np.uint8)
@@ -30,7 +30,7 @@ def preprocess_image(file):
 
     color_hist = []
     for ch in range(3):
-        hist = cv2.calcHist([img], [ch], None, [32], [0, 256])
+        hist = cv2.calcHist([img], [ch], None, [64], [0, 256])
         color_hist.extend(hist.flatten())
 
     combined = np.concatenate([hog_feat, color_hist]).reshape(1, -1)

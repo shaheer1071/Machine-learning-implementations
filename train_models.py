@@ -18,9 +18,9 @@ with open('features.pkl', 'rb') as f:
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# PCA - keep 200 components (more info retained)
-print("Applying PCA (200 components)...")
-pca = PCA(n_components=200, random_state=42)
+# PCA - keep 300 components (more variance retained)
+print("Applying PCA (300 components)...")
+pca = PCA(n_components=300, random_state=42)
 X_pca = pca.fit_transform(X_scaled)
 print(f"Variance explained: {pca.explained_variance_ratio_.sum()*100:.1f}%")
 
@@ -30,9 +30,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 print(f"Train: {len(X_train)}, Test: {len(X_test)}")
 
 models = {
-    'KNN (k=7)':        KNeighborsClassifier(n_neighbors=7, metric='euclidean', n_jobs=-1),
-    'Decision Tree':    DecisionTreeClassifier(max_depth=20, min_samples_split=5, random_state=42),
-    'Naive Bayes':      GaussianNB(var_smoothing=1e-8)
+    'KNN (k=5)':        KNeighborsClassifier(n_neighbors=5, metric='manhattan', n_jobs=-1),
+    'Decision Tree':    DecisionTreeClassifier(max_depth=15, min_samples_split=4, min_samples_leaf=2, random_state=42),
+    'Naive Bayes':      GaussianNB(var_smoothing=1e-9)
 }
 
 results = {}

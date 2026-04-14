@@ -32,10 +32,10 @@ def extract_hog_features(folder, label, max_samples):
             block_norm='L2-Hys'
         )
 
-        # Also add color histogram (RGB channel stats)
+        # Also add color histogram (RGB channel stats) with more bins
         color_hist = []
         for ch in range(3):
-            hist = cv2.calcHist([img], [ch], None, [32], [0, 256])
+            hist = cv2.calcHist([img], [ch], None, [64], [0, 256])
             color_hist.extend(hist.flatten())
 
         # Combine HOG + color histogram
